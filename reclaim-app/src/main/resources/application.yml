@@ -1,0 +1,89 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: reclaim-app
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/reclaim}
+    username: ${DATABASE_USERNAME:reclaim}
+    password: ${DATABASE_PASSWORD:reclaim_password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          batch_size: 25
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: reclaim-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+reclaim:
+  kafka:
+    raw-events-topic: ${KAFKA_TOPIC_RAW_EVENTS:reclaim.events.raw}
+    normalized-events-topic: ${KAFKA_TOPIC_NORMALIZED_EVENTS:reclaim.events.normalized}
+  razorpay:
+    key-id: ${RAZORPAY_KEY_ID:rzp_test_placeholder_key_id}
+    key-secret: ${RAZORPAY_KEY_SECRET:placeholder_key_secret}
+    webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:placeholder_webhook_secret}
+    base-url: ${RAZORPAY_BASE_URL:https://api.razorpay.com/v1}
+  llm:
+    provider: gemini
+    api-key: ${GEMINI_API_KEY:placeholder_gemini_api_key}
+    model: ${GEMINI_MODEL:gemini-2.5-flash}
+    base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
+  policy:
+    max-retries: ${RECOVERY_MAX_RETRIES:3}
+    min-retry-interval-hours: ${RECOVERY_MIN_RETRY_INTERVAL_HOURS:6}
+    max-contacts: ${RECOVERY_MAX_CONTACTS:3}
+    contact-cooldown-hours: ${RECOVERY_CONTACT_COOLDOWN_HOURS:24}
+    per-case-spend-cap-percent: ${RECOVERY_SPEND_CAP_PERCENT:15}
+    high-value-threshold-paise: ${RECOVERY_HIGH_VALUE_THRESHOLD_PAISE:1000000}
+    run-spend-cap-paise: ${RECOVERY_RUN_SPEND_CAP_PAISE:10000000}
+  costs:
+    retry-attempt-paise: 200     # ₹2.00
+    payment-link-paise: 0        # ₹0.00
+    message-paise: 35            # ₹0.35
+    human-escalation-paise: 4000 # ₹40.00
+    gemini-input-cost-per-1k-tokens-paise: 1
+    gemini-output-cost-per-1k-tokens-paise: 3
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      razorpayClient:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+      llmAgent:
+        sliding-window-size: 5
+        failure-rate-threshold: 40
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 2
+  retry:
+    instances:
+      razorpayClient:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
