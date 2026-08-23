@@ -1,0 +1,38 @@
+# Build artifacts
+target/
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Environment & Secrets
+.env
+.env.local
+*.secret
+*.pem
+*.key
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Replay & local test results
+results/*.local.json
+results/temp/
+
+# Tunnels
+.ngrok/
+.cloudflared/
