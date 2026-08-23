@@ -1,122 +1,60 @@
-# RECLAIM — System Architecture & Design
+# RECLAIM — System Architecture & Trust Boundaries
 
-> **An event-driven Spring Boot revenue recovery system with deterministic guardrails and cryptographic audit ledgering.**
-
----
-
-## 1. High-Level Component Flow
-
-```mermaid
-flowchart TD
-    subgraph Sources [Event Ingestion Sources]
-        A[Live-delivered webhooks from Razorpay Test Mode] --> G[Webhook Gateway / Ingestion API]
-        B[Replay Event Stream] --> G
-    end
-
-    subgraph Ingestion [Ingestion Layer]
-        G --> H[HMAC-SHA256 Validator]
-        H --> D[Idempotency & Deduplication Filter]
-        D --> K[(Raw Event DB & Kafka: reclaim.events.raw)]
-    end
-
-    subgraph Processing [Event Processing & State Machine]
-        K --> P[Event Processor & Normalizer]
-        P --> SM[Case State Machine]
-    end
-
-    subgraph AgenticCore [Autonomous Agent & Guardrails]
-        SM --> AG[Gemini 2.5 Flash Agent Core]
-        AG -->|Proposes Plan| PE[Deterministic Policy Engine]
-        PE -->|ALLOW / MODIFY / DENY| EX[Action Executor]
-    end
-
-    subgraph Actions [Razorpay Execution & Audit]
-        EX --> RZ[Razorpay REST API Client]
-        EX --> AL[(Cryptographic SHA-256 Hash-Chained Audit Ledger)]
-        RZ -->|Webhook Update| G
-    end
-```
+**Target:** Razorpay AI Buildathon · Track 03 (AI Revenue Recovery)  
+**Architectural Philosophy:** *AI Proposes Recovery Plans; Deterministic Policy Controls Every Money Action.*
 
 ---
 
-## 2. Recovery Case State Machine
+## 1. System Architecture Diagram
 
-```mermaid
-stateDiagram-v2
-    [*] --> AT_RISK: Charge Failed (subscription.pending / payment.failed)
-    AT_RISK --> DIAGNOSING: Ingestion & Normalization
-    DIAGNOSING --> PLANNED: Agent Diagnosis + Policy Approved
-    DIAGNOSING --> ESCALATED: High-Value (>=₹10,000) or Policy Limit
-    DIAGNOSING --> ABANDONED: Unrecoverable (Revoked / Churned)
-    PLANNED --> EXECUTING: Action Dispatched
-    EXECUTING --> WAITING: Awaiting Response / Scheduled Window
-    WAITING --> DIAGNOSING: Retry Failed (Re-planning)
-    WAITING --> RECOVERED: payment.captured
-    WAITING --> ABANDONED: subscription.cancelled / Max Retries Exceeded
-    RECOVERED --> [*]
-    ESCALATED --> [*]
-    ABANDONED --> [*]
-```
+![System Architecture](docs/images/v1-system-architecture.png)
+
+### Core Component Breakdown
+1. **Webhook Ingress (`WebhookGateway.java`):** Ingests live Razorpay Test Mode webhooks, verifies HMAC-SHA256 signatures, and performs deduplication on `razorpay_event_id`.
+2. **Distributed Event Streaming (Redpanda / Kafka):** Ingests events into `reclaim.events.raw` topic, decoupling peak-hour webhook ingestion from reasoning latency.
+3. **Event Normalization & State Machine (`EventProcessor.java` & `StateMachine.java`):** Correlates multi-event trajectories into `RecoveryCase` entities across an 8-state finite state machine.
+4. **AI Reasoning Advisory (`GeminiAgentClient.java`):** Prompts Gemini 2.5 Flash with failure context, customer attempt history, and downtime status to propose structured JSON recovery plans.
+5. **Deterministic Policy Engine (`PolicyEngine.java`):** Pure deterministic code evaluating 13 strict guardrails (retry caps, spend limits, TRAI quiet hours, mandate revocation locks) with `ALLOW`, `MODIFY`, or `DENY` verdicts.
+6. **Pre-Flight Truth Reconciler (`TruthReconciler.java`):** Pre-execution verification polling Razorpay API (`GET /v1/subscriptions/{id}`). Halts action if subscription is inactive or already settled.
+7. **Bounded Action Executor (`ActionExecutor.java`):** Dispatches idempotent requests (`act_{caseId}_{type}_{idx}`) to Razorpay APIs.
+8. **Cryptographic Audit Ledger (`AuditLedger.java`):** Computes SHA-256 hash chains across sequential transitions for process-boundary tamper evidence.
 
 ---
 
-## 3. End-to-End Recovery Sequence
+## 2. End-to-End Recovery Flow & Abstention Paths
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Customer
-    participant RZP as Razorpay Gateway
-    participant GW as Webhook Gateway
-    participant SM as State Machine
-    participant LLM as Gemini 2.5 Flash Agent
-    participant PE as Policy Engine (Guardrails)
-    participant EX as Action Executor
-    participant AL as Audit Ledger
+![End-to-End Recovery Flow](docs/images/v2-recovery-flow.png)
 
-    RZP->>GW: POST /api/v1/webhooks/razorpay (subscription.pending)
-    GW->>GW: Validate HMAC-SHA256 & Deduplicate
-    GW->>AL: Append RAW_EVENT
-    GW->>SM: Open / Transition Case -> DIAGNOSING
-    SM->>AL: Append STATE_TRANSITION (AT_RISK -> DIAGNOSING)
-    
-    SM->>LLM: Diagnose Failure & Propose Recovery Plan
-    LLM-->>PE: Return Proposed Actions (JSON)
-    PE->>PE: Evaluate 13 Pure Deterministic Guardrails
-    PE->>AL: Append POLICY_VERDICT (ALLOW / MODIFY / DENY)
-    
-    alt Approved by Policy
-        PE->>EX: Dispatch Recovery Action
-        EX->>RZP: Execute (Retry / Payment Method Update Link)
-        EX->>AL: Append ACTION_EXECUTED
-        SM->>AL: Transition -> EXECUTING -> WAITING
-    else Escalated
-        PE->>EX: Create Human Review Task
-        SM->>AL: Transition -> ESCALATED
-    end
-
-    Customer->>RZP: Completes Payment / Updates Method
-    RZP->>GW: POST /api/v1/webhooks/razorpay (payment.captured)
-    GW->>SM: Transition -> RECOVERED
-    SM->>AL: Append STATE_TRANSITION (WAITING -> RECOVERED)
-```
+### Execution Pathways
+- **Path A (Active Recovery):** Ingest $\rightarrow$ Dedup $\rightarrow$ Reconcile $\rightarrow$ AI Diagnosis $\rightarrow$ Policy Evaluation $\rightarrow$ Idempotent Action Dispatch $\rightarrow$ Settled.
+- **Path B (Policy Abstention):** Revoked Mandate / Explicit Churn $\rightarrow$ `CANCELLED_SUB_LOCK` triggers immediate `DENY` $\rightarrow$ Case closed safely with 0 retries and 0 customer spam.
 
 ---
 
-## 4. Supported Recovery Actions (Razorpay-Aligned)
+## 3. AI Advisory vs. Deterministic Control Trust Boundary
 
-| Action | When Proposed | Razorpay Workflow | Guardrails Checked |
+![Trust Boundary](docs/images/v6-trust-boundary.png)
+
+The system maintains a strict separation of concerns:
+- **AI Advisory Zone:** Diagnoses failure causes, correlates multi-variable timing (e.g. salary cycles, bank downtime), and formulates recommendations. The AI has **zero execution authority**.
+- **Deterministic Control Zone:** Enforces hard mathematical limits, spend caps, idempotency keys, and state invariants.
+
+---
+
+## 4. Event Reliability: Duplicate vs. Out-of-Order Delivery
+
+![Duplicate vs Out-of-Order](docs/images/v7-duplicate-vs-out-of-order.png)
+
+| Reliability Challenge | Failure Scenario | RECLAIM Mitigation Mechanism | Test Verification |
 |---|---|---|---|
-| `SCHEDULE_RETRY` | Transient failures (e.g. balance, downtime) | `/v1/subscriptions/{id}/charge` | `MAX_RETRIES`, `MIN_RETRY_INTERVAL`, `DOWNTIME_BLOCK` |
-| `REQUEST_PAYMENT_METHOD_UPDATE` | Card expired / mandate invalid | `/v1/payment_links` update link | `PER_CASE_SPEND_CAP`, `IDEMPOTENCY_GUARD` |
-| `SEND_CUSTOMER_NUDGE` | Customer intervention needed | Context-aware outreach | `QUIET_HOURS`, `MAX_CONTACTS`, `CONTACT_COOLDOWN` |
-| `ESCALATE` | High-value ($\ge$ ₹10k) or risk boundary | Human task queue | `HIGH_VALUE_APPROVAL` |
-| `CLOSE_CASE` | Revoked mandate / explicit cancellation | Immediate termination | `TERMINAL_STATE_LOCK`, `CANCELLED_SUB_LOCK` |
+| **Duplicate Delivery** | Gateway resends identical webhook 5× concurrently | `UNIQUE(razorpay_event_id)` database constraint + deterministic action idempotency keys | `ConcurrentDuplicateAndOutOfOrderWebhookTest` |
+| **Out-of-Order Delivery** | `payment.captured` arrives *before* delayed `subscription.pending` | Terminal State Lock (`RECOVERED`) + Pre-Flight `TruthReconciler` check | `EventOrderingAndShuffleTest` |
 
 ---
 
-## 5. Architectural Invariants
+## 5. Audit Ledger Trust Boundary & Honest Limitations
 
-1. **One Code Path:** Replay test events and live webhooks traverse the identical HTTP endpoint, HMAC verifier, state machine, and policy engine.
-2. **Deterministic Precedence:** The LLM cannot override retry caps, quiet hours, spend limits, or terminal state locks.
-3. **Cryptographic Tamper-Evidence:** Every entry hash satisfies `H_n = SHA-256(H_{n-1} || canonical_json(payload))`.
+![Audit Trust Boundary](docs/images/v8-audit-trust-boundary.png)
+
+- **Internal Boundary Guarantee:** Every audit log row stores `SHA-256(prev_hash || canonical_json(entry))`. Any direct row modification in PostgreSQL breaks the cryptographic link and is detected via `GET /api/audit/verify`.
+- **Honest Limitation:** External anchoring (to an immutable public ledger or WORM storage) is **not implemented**. Direct PostgreSQL superuser access could theoretically recompute the chain.

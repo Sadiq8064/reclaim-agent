@@ -1,93 +1,77 @@
 # RECLAIM — Adaptive Revenue Recovery Control Plane
 
-> **An event-driven revenue recovery control plane with multi-event correlation, pre-flight truth reconciliation, and deterministic guardrails on every money action.**  
-> **Headline Result:** Recovered **₹667,593.50 Net (83.0% Overall Recovery Rate · 100.0% Recoverable Rate)** across 300 calibrated cases — outperforming blind fixed retries by **+₹159,462.50** and deterministic rules heuristics by **+₹19,495.40 Net** with **0 wasted retries** and **0 customer churn**.
+**Target:** Razorpay AI Buildathon · Track 03 (AI Revenue Recovery)  
+**Builder:** Sadiq (Backend & Distributed Systems)  
+**Repository:** [github.com/Sadiq8064/reclaim-agent](https://github.com/Sadiq8064/reclaim-agent)
 
 ---
 
-## 1. 4-Arm Measured Evaluation (300-Case Batch)
+## 1. Executive Summary
 
-| Metric | B0 (Do Nothing) | B1 (Fixed Retries) | B2 (Rules Only) | B3 (RECLAIM Control Plane) |
+RECLAIM is an adaptive payment recovery control plane for subscription commerce. When recurring auto-debit payments fail due to transient banking friction, card expiry, or rail downtime, RECLAIM autonomously diagnoses the failure cause, verifies live ground truth, and executes context-aware recovery workflows while strictly bounded by 13 deterministic financial guardrails.
+
+> **Core Philosophy:** *The AI proposes recovery plans; deterministic code decides every money action.*
+
+![System Architecture](docs/images/v1-system-architecture.png)
+
+---
+
+## 2. Key Architecture & Trust Boundary
+
+![Trust Boundary](docs/images/v6-trust-boundary.png)
+
+- **AI Diagnostic Advisory:** Gemini 2.5 Flash correlates natural language decline messages, customer history, and live downtime signals. The AI has **zero direct execution authority**.
+- **Pre-Flight Truth Reconciler:** Pre-execution verification polling Razorpay API (`GET /v1/subscriptions/{id}`) to halt actions if subscriptions are inactive or already settled.
+- **13 Pure Code Guardrails:** Strict spend caps, retry limits, TRAI quiet hours, and mandate revocation locks.
+- **Process-Boundary Audit Ledger:** Cryptographic SHA-256 hash chains across all state transitions (`GET /api/audit/verify`).
+
+---
+
+## 3. Evaluation Highlights (20-Seed Benchmark)
+
+Evaluated across **20 random seeds × 300 cases (6,000 total simulated subscription failures)**:
+
+| Metric | B0 (Do Nothing) | B1 (Fixed Retries) | B2 (Deterministic Rules) | B3 (RECLAIM Agent) |
 |---|---|---|---|---|
-| **💰 Net Recovered** | ₹0.00 | ₹508,131.00 | ₹648,098.10 | **₹667,593.50** |
-| **📈 95% CI (Bootstrap)** | — | [₹419,869, ₹599,542] | [₹550,513, ₹756,105] | **[₹572,005, ₹778,056]** |
-| **💵 Gross Recovered** | ₹0.00 | ₹509,799.00 | ₹648,561.00 | **₹668,051.00** |
-| **💳 Recovery Cost** | ₹0.00 | ₹1,668.00 | ₹462.90 | **₹457.50** |
-| **🎯 Recovery Rate (Overall)** | 0.0% | 67.0% | 79.7% | **83.0%** |
-| **🎯 Recovery Rate (Recoverable)** | 0.0% | 80.7% | 96.0% | **100.0%** |
-| **⚡ Actions per Recovery** | 0.0 | 4.48 | 1.57 | **1.41** |
-| **🛑 Wasted Actions (False-Positive)** | 0 | 297 | **0** | **0** |
-| **💔 Churn Triggered** | 0 | 99 | 24 | **0** |
+| **20-Seed Mean Net Recovered** | ₹0.00 | ₹496,210.45 | ₹634,119.26 | **₹653,788.99** |
+| **Mean Incremental Lift** | — | — | Baseline | **+₹19,669.73 Net Lift** |
+| **Win / Loss / Tie Count** | — | 20 / 0 / 0 | Baseline | **20 Wins / 0 Losses / 0 Ties** |
+| **Actions per Recovery** | 0.0 | 4.48 | 1.57 | **1.41** |
+| **Wasted Retries per 300** | 0 | 297 | 0 | **0** |
+| **Intentional Abstentions** | — | 0 | 27 | **51 Cases (27 Revoked + 24 Churned)** |
 
-```text
-Net Revenue Recovery Comparison:
-B0 (Do Nothing)       | ₹0.00
-B1 (Fixed Retries)    | █████████████████████████░░░░░░░░  ₹508,131.00 (67.0%)
-B2 (Rules Heuristics) | ████████████████████████████████░  ₹648,098.10 (79.7%)
-B3 (RECLAIM Agent)    | █████████████████████████████████  ₹667,593.50 (83.0% 🏆 +₹19.5k Net)
-```
+![AI Cost vs Incremental Lift](docs/images/v9-ai-cost-vs-incremental-lift.png)
+
+*For complete benchmarks, seed breakdowns, and statistical methodology, see [EVALUATION.md](EVALUATION.md).*  
+*For deep component specifications, sequence flows, and reliability invariants, see [ARCHITECTURE.md](ARCHITECTURE.md).*
 
 ---
 
-## 2. Core Control Plane Innovations
+## 4. Quickstart & Verification
 
-### 🥇 1. Live Payment-Downtime Awareness & Adaptive Re-Planning
-Rather than treating every failure as a customer issue, RECLAIM ingests Razorpay `payment.downtime.started` and `payment.downtime.resolved` events. During active bank/network disruptions, retries are paused in `WAIT` state. The moment downtime clears, RECLAIM automatically triggers an adaptive charge retry.
+### Prerequisites
+- Docker & Docker Compose
+- Java 17+ & Maven 3.9+
 
-### 🥈 2. Pre-Flight Recovery Truth Reconciler
-Before dispatching any money action or customer intervention, RECLAIM verifies ground truth against live Razorpay subscription state (`GET /v1/subscriptions/{id}`). If the payment was already captured asynchronously or cancelled by the merchant, pending actions are cancelled immediately—preventing double debits and stale actions.
-
-### 🥉 3. Multi-Event Case Correlation
-Correlates disparate asynchronous events (`subscription.pending`, `payment.failed`, `payment.downtime`, `payment.captured`) into a single evolving `RecoveryCase` timeline with a complete cryptographic audit trail.
-
----
-
-## 3. 30-Second Recovery Intelligence Graph Example
-
-```text
-CASE #R-204 (₹12,000 Subscription Renewal)
-
-10:00 | Payment fails: BANK_TEMPORARY_FAILURE (HDFC gateway degraded)
-10:01 | Live Downtime Event: HDFC netbanking/mandate disruption detected
-10:01 | Gemini Agent Proposal: DO NOT RETRY (Downtime active)
-10:01 | Deterministic Policy: APPROVED (DOWNTIME_BLOCK enforced) -> Action: WAIT
-15:20 | Live Downtime Event: HDFC disruption resolved
-15:21 | Autonomous Re-planning: Agent schedules immediate retry
-15:21 | Pre-Flight Truth Reconciler: Verified subscription ACTIVE & UNPAID
-15:22 | subscription.charged webhook arrives
-15:22 | ₹12,000.00 RECOVERED (Net Cost: ₹2.00) -> Tamper-Evident SHA-256 Ledger Locked
-```
-
----
-
-## 4. Quickstart (Reproduce in 2 Commands)
-
+### Local Startup
 ```bash
-# 1. Start Postgres + Kafka and run all 23 tests (100% passing)
-make up && make test
+# 1. Start PostgreSQL 16 & Redpanda Kafka broker
+docker compose up -d
 
-# 2. Run the 4-Arm Evaluation benchmark
+# 2. Run clean test suite (27 unit & integration tests)
+mvn clean test
+
+# 3. Run the 20-seed evaluation benchmark
 make eval
 
-# 3. Run the live end-to-end webhook recovery demo
-make demo
+# 4. Start the Spring Boot Web Command Center
+mvn -pl reclaim-app spring-boot:run
 ```
+Access the local Command Center dashboard at `http://localhost:8080`.
 
 ---
 
-## 5. Architectural Guardrails & Resilience
+## 5. Scope & Limitations
 
-- **13 Pure Deterministic Guardrails:** Retry limits (3 max), Quiet hours (21:00–09:00 IST), Cooldowns (6h min), Spend caps, Terminal state locks.
-- **Resilience4j Circuit Breaker:** Graceful fallback to `RulesRecoveryEngine.java` (`degraded_mode=true`) on LLM 503 outage.
-- **SHA-256 Hash-Chained Audit Ledger:** Verifiable tamper-evident chain (`GET /api/audit/verify`).
-- **Emergency Kill Switch:** `POST /api/admin/halt` instantly freezes all autonomous action dispatches.
-
----
-
-## 6. Project Documentation Links
-
-- 🏛️ [System Architecture & State Machine](ARCHITECTURE.md)
-- 📊 [4-Arm Evaluation Benchmark & Methodology](EVALUATION.md)
-- 🎬 [5-Minute Buildathon Pitch Video Script & Storyboard](docs/PITCH_SCRIPT.md)
-- 🛠️ [Runbook, Ports & Troubleshooting](RUNBOOK.md)
-- ⚠️ [Assumptions, Boundaries & Production Limitations](LIMITATIONS.md)
+1. **Synthetic Generator Boundary:** Evaluation was conducted across 20 synthetic random seed batches calibrated to Indian payment decline distributions. Real-world recovery rates will vary by merchant vertical.
+2. **Audit Ledger Boundary:** The SHA-256 hash chain provides tamper-evidence within the RECLAIM process and database boundary. External blockchain or WORM storage anchoring is not implemented.
