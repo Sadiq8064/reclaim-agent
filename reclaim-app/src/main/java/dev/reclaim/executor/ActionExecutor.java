@@ -5,8 +5,6 @@ import dev.reclaim.audit.AuditLedger;
 import dev.reclaim.domain.*;
 import dev.reclaim.razorpay.RazorpayClient;
 import dev.reclaim.repository.*;
-import dev.reclaim.repository.*;
-import dev.reclaim.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -89,27 +87,35 @@ public class ActionExecutor {
                     action.setResponse(objectMapper.writeValueAsString(response));
                     recoveryCase.addCost(action.getCostPaise());
                 }
-                case SEND_MESSAGE, SEND_NOTIFICATION -> {
+                case REQUEST_PAYMENT_METHOD_UPDATE -> {
+                    RazorpayClient.RazorpayPaymentLinkResponse response = razorpayClient.createPaymentLink(
+                            recoveryCase.getAmountPaise(),
+                            "Customer " + recoveryCase.getCustomerId(),
+                            "+919876543210",
+                            "customer_" + recoveryCase.getCustomerId() + "@example.com",
+                            "Update Payment Method for Subscription " + recoveryCase.getSubscriptionId(),
+                            action.getIdempotencyKey()
+                    );
                     action.setStatus(ActionStatus.SUCCEEDED);
                     action.setExecutedAt(Instant.now());
-                    String template = "Dear Customer, your subscription payment for " + recoveryCase.getSubscriptionId() + 
-                            " requires attention (" + recoveryCase.getFailureCode() + "). Please complete recovery securely.";
+                    action.setRazorpayRef(response.id());
                     action.setResponse(objectMapper.writeValueAsString(Map.of(
-                            "delivery", "DELIVERED",
-                            "channels", new String[]{"WHATSAPP", "EMAIL", "SMS"},
-                            "templateSnippet", template
+                            "workflow", "SUBSCRIPTION_PAYMENT_METHOD_UPDATE",
+                            "paymentLinkId", response.id(),
+                            "shortUrl", response.shortUrl(),
+                            "status", "UPDATE_REQUESTED"
                     )));
-                    recoveryCase.incrementContacts();
                     recoveryCase.addCost(action.getCostPaise());
                 }
-                case CARD_UPDATER_SYNC -> {
+                case SEND_CUSTOMER_NUDGE, SEND_MESSAGE -> {
                     action.setStatus(ActionStatus.SUCCEEDED);
                     action.setExecutedAt(Instant.now());
                     action.setResponse(objectMapper.writeValueAsString(Map.of(
-                            "updaterStatus", "TOKEN_REFRESHED",
-                            "networkResponse", "EXPIRY_EXTENDED_SUCCESS",
-                            "vaultToken", "tok_vault_" + UUID.randomUUID().toString().substring(0, 8)
+                            "delivery", "DELIVERED",
+                            "channel", "CONTEXT_AWARE_NUDGE",
+                            "status", "DISPATCHED"
                     )));
+                    recoveryCase.incrementContacts();
                     recoveryCase.addCost(action.getCostPaise());
                 }
                 case ESCALATE -> {
