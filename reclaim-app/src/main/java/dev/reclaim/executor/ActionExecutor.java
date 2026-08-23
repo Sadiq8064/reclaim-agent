@@ -23,6 +23,7 @@ public class ActionExecutor {
     private final RecoveryActionRepository recoveryActionRepository;
     private final RecoveryCaseRepository recoveryCaseRepository;
     private final HumanTaskRepository humanTaskRepository;
+    private final dev.reclaim.reconciler.TruthReconciler truthReconciler;
     private final AuditLedger auditLedger;
     private final ObjectMapper objectMapper;
 
@@ -31,12 +32,14 @@ public class ActionExecutor {
             RecoveryActionRepository recoveryActionRepository,
             RecoveryCaseRepository recoveryCaseRepository,
             HumanTaskRepository humanTaskRepository,
+            dev.reclaim.reconciler.TruthReconciler truthReconciler,
             AuditLedger auditLedger,
             ObjectMapper objectMapper) {
         this.razorpayClient = razorpayClient;
         this.recoveryActionRepository = recoveryActionRepository;
         this.recoveryCaseRepository = recoveryCaseRepository;
         this.humanTaskRepository = humanTaskRepository;
+        this.truthReconciler = truthReconciler;
         this.auditLedger = auditLedger;
         this.objectMapper = objectMapper;
     }
@@ -46,15 +49,13 @@ public class ActionExecutor {
         log.info("Executing recovery action #{} [type={}, caseId={}]", action.getId(), action.getActionType(), recoveryCase.getId());
 
         try {
-            // Reconciliation check before retry
-            if (action.getActionType() == ActionType.SCHEDULE_RETRY) {
-                boolean active = razorpayClient.reconcileSubscriptionStatus(recoveryCase.getSubscriptionId());
-                if (!active) {
+            // Pre-flight Recovery Truth Reconciliation
+            if (action.getActionType() == ActionType.SCHEDULE_RETRY || action.getActionType() == ActionType.REQUEST_PAYMENT_METHOD_UPDATE || action.getActionType() == ActionType.CREATE_PAYMENT_LINK) {
+                dev.reclaim.reconciler.TruthReconciler.ReconciliationVerdict verdict = truthReconciler.reconcileCurrentTruth(recoveryCase);
+                if (!verdict.safeToProceed()) {
                     action.setStatus(ActionStatus.CANCELLED);
-                    action.setError("Subscription is no longer active in Razorpay (reconciliation sweep cancelled retry)");
+                    action.setError(verdict.reason());
                     recoveryActionRepository.save(action);
-                    auditLedger.record(recoveryCase.getId(), recoveryCase.getRunId(), "RECONCILIATION_CANCELLED", ActorType.EXECUTOR,
-                            Map.of("actionId", action.getId(), "reason", "Subscription inactive during reconciliation sweep"));
                     return;
                 }
             }

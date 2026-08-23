@@ -67,7 +67,10 @@ class ReclaimRealLoopE2ETest {
         rulesEngine = new RulesRecoveryEngine();
         agentClient = new GeminiAgentClient("placeholder", "gemini-2.5-flash", "https://api.test", rulesEngine, objectMapper);
         razorpayClient = new RazorpayClient("rzp_test_placeholder", "secret_placeholder", "https://api.razorpay.com/v1", objectMapper);
-        actionExecutor = new ActionExecutor(razorpayClient, actionRepo, caseRepo, humanTaskRepo, auditLedger, objectMapper);
+        dev.reclaim.reconciler.TruthReconciler truthReconciler = new dev.reclaim.reconciler.TruthReconciler(
+                razorpayClient, caseRepo, actionRepo, stateMachine, auditLedger
+        );
+        actionExecutor = new ActionExecutor(razorpayClient, actionRepo, caseRepo, humanTaskRepo, truthReconciler, auditLedger, objectMapper);
 
         eventProcessor = new EventProcessor(
                 caseRepo, decisionRepo, verdictRepo, actionRepo,

@@ -297,12 +297,43 @@ public class EventProcessor {
     }
 
     private void handleDowntimeStarted(RawEvent rawEvent, JsonNode root, JsonNode payload) {
-        log.info("Downtime started event received. Postponing imminent retries.");
-        // Re-planning trigger
+        log.info("Live payment downtime started event received. Pausing active retries across affected cases.");
+        List<CaseState> activeStates = List.of(CaseState.WAITING, CaseState.PLANNED);
+        List<RecoveryCase> affectedCases = recoveryCaseRepository.findAll().stream()
+                .filter(c -> !c.getState().isTerminal() && activeStates.contains(c.getState()))
+                .toList();
+
+        for (RecoveryCase rc : affectedCases) {
+            auditLedger.record(rc.getId(), rc.getRunId(), "DOWNTIME_DETECTED_PAUSED", ActorType.POLICY,
+                    Map.of("downtimeEventId", rawEvent.getRazorpayEventId(), "status", "RETRIES_PAUSED_UNTIL_DOWNTIME_RESOLVED"));
+        }
     }
 
     private void handleDowntimeResolved(RawEvent rawEvent, JsonNode root, JsonNode payload) {
-        log.info("Downtime resolved event received. Re-evaluating postponed actions.");
-        // Re-planning trigger
+        log.info("Payment downtime resolved event received. Triggering autonomous re-planning across waiting cases!");
+        List<CaseState> activeStates = List.of(CaseState.WAITING);
+        List<RecoveryCase> waitingCases = recoveryCaseRepository.findAll().stream()
+                .filter(c -> !c.getState().isTerminal() && activeStates.contains(c.getState()))
+                .toList();
+
+        for (RecoveryCase rc : waitingCases) {
+            log.info("Downtime cleared! Triggering autonomous recovery retry on case {}", rc.getId());
+            auditLedger.record(rc.getId(), rc.getRunId(), "DOWNTIME_CLEARED_RETRY_TRIGGERED", ActorType.AGENT,
+                    Map.of("downtimeEventId", rawEvent.getRazorpayEventId(), "action", "SCHEDULE_IMMEDIATE_RETRY"));
+
+            // Create and execute immediate recovery retry
+            String idempotencyKey = "act_replan_downtime_" + rc.getId() + "_" + System.currentTimeMillis();
+            RecoveryAction retryAction = new RecoveryAction(
+                    UUID.randomUUID(),
+                    rc.getId(),
+                    ActionType.SCHEDULE_RETRY,
+                    idempotencyKey,
+                    Instant.now(),
+                    ActionStatus.PENDING,
+                    200L
+            );
+            recoveryActionRepository.save(retryAction);
+            actionExecutor.executeAction(retryAction, rc);
+        }
     }
 }

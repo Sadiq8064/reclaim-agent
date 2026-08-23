@@ -3,6 +3,7 @@ package dev.reclaim.executor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.reclaim.audit.AuditLedger;
 import dev.reclaim.domain.*;
+import dev.reclaim.statemachine.StateMachine;
 import dev.reclaim.razorpay.RazorpayClient;
 import dev.reclaim.repository.*;
 import dev.reclaim.repository.*;
@@ -30,8 +31,13 @@ class ExecutorResilienceTest {
         AuditLedger auditLedger = Mockito.mock(AuditLedger.class);
         ObjectMapper objectMapper = new ObjectMapper();
 
+        StateMachine stateMachine = Mockito.mock(StateMachine.class);
+        dev.reclaim.reconciler.TruthReconciler truthReconciler = new dev.reclaim.reconciler.TruthReconciler(
+                razorpayClient, caseRepo, actionRepo, stateMachine, auditLedger
+        );
+
         ActionExecutor executor = new ActionExecutor(
-                razorpayClient, actionRepo, caseRepo, humanTaskRepo, auditLedger, objectMapper
+                razorpayClient, actionRepo, caseRepo, humanTaskRepo, truthReconciler, auditLedger, objectMapper
         );
 
         RecoveryCase testCase = new RecoveryCase(
