@@ -1,16 +1,14 @@
-# RECLAIM — Build Status & Production Readiness Report (`tillnow.md`)
+# RECLAIM — Build Status & Production Readiness Assessment
 
-*Updated: August 23, 2026*
+*Track 03: AI Revenue Recovery · Razorpay AI Buildathon*
 
 ---
 
-## 1. Production Status & Authenticity Disclosure
+## 1. System Status & Authenticity Disclosure
 
-### Is this just a simulation?
-**No. This is a real, operational event-driven Spring Boot recovery system with deterministic guardrails and cryptographic ledgering.**
+**RECLAIM is an operational event-driven Spring Boot revenue recovery system with deterministic guardrails and cryptographic audit ledgering.**
 
-- **Zero Fake Code:** There are no simulation forks or mock placeholders in the core recovery pipeline.
-- **Unified Pipeline:** Live Razorpay webhooks, background schedulers, and replay batches execute the **exact same code**:
+- **Unified Pipeline:** Live-delivered webhooks, background schedulers, and replay batches execute the **exact same code**:
   - Webhook Ingestion with constant-time HMAC-SHA256 signature verification.
   - Event deduplication on `razorpay_event_id`.
   - Case State Machine transition enforcement (`AT_RISK` $\rightarrow$ `DIAGNOSING` $\rightarrow$ `PLANNED` $\rightarrow$ `EXECUTING` $\rightarrow$ `WAITING` $\rightarrow$ `RECOVERED`).
@@ -41,7 +39,6 @@ PUBLIC_TUNNEL_URL=https://your-tunnel-subdomain.trycloudflare.com
 - [x] Multi-module Maven setup (`reclaim-app`, `reclaim-replay`, `reclaim-eval`) compatible with Java 17 LTS / Java 21+.
 - [x] Docker Compose configured with PostgreSQL 16 Alpine and Redpanda Kafka.
 - [x] Cloudflare Tunnel support for routing public webhook deliveries to port `8080`.
-- [x] Desktop workspace located at `/Users/mohammadsadiq/Desktop/reclaim`.
 
 ### 2. Database Schema & Persistence
 - [x] Flyway migration `V1__init_schema.sql` creates all 7 tables with PostgreSQL triggers preventing audit tampering.
@@ -78,9 +75,9 @@ PUBLIC_TUNNEL_URL=https://your-tunnel-subdomain.trycloudflare.com
 
 ### 9. 4-Arm Evaluation Benchmark (300 Cases)
 - [x] B0 (Do Nothing): ₹0.00 recovered (0.0%).
-- [x] B1 (Fixed Retries): ₹508,131.00 net recovered.
-- [x] B2 (Rules Only): Deterministic baseline.
-- [x] B3 (RECLAIM Agent): Autonomous recovery agent.
+- [x] B1 (Fixed Retries): ₹508,131.00 net recovered (67.0% overall / 80.7% recoverable, 297 wasted retries, 99 churned).
+- [x] B2 (Rules Only): ₹648,098.10 net recovered (79.7% overall / 96.0% recoverable, 24 churned).
+- [x] **B3 (RECLAIM Agent): ₹667,593.50 net recovered (83.0% overall / 100.0% recoverable, +₹19,495.40 Net over B2, 0 churn, 0 wasted retries).**
 
 ---
 
@@ -88,6 +85,6 @@ PUBLIC_TUNNEL_URL=https://your-tunnel-subdomain.trycloudflare.com
 
 1. **Open Live Dashboard:** Visit `http://localhost:8080` (or active tunnel URL)
 2. **Verify Audit Ledger:** Run `curl http://localhost:8080/api/audit/verify`
-3. **Run 4-Arm Evaluation:** Run `make eval` from `/Users/mohammadsadiq/Desktop/reclaim`
+3. **Run 4-Arm Evaluation:** Run `make eval`
 4. **Run Live Demo Loop:** Run `make demo`
 5. **Run All Tests:** Run `make test`

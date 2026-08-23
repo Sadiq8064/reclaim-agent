@@ -19,9 +19,39 @@
 | **🛑 Wasted Actions (False-Positive)** | 0 | 297 | **0** | **0** |
 | **💔 Churn Triggered** | 0 | 99 | 24 | **0** |
 
+## 2. 30-Second Example: How an Autonomous Recovery Trajectory Works
+
+```text
+CASE: ₹12,000 subscription renewal charge failed
+
+1. Inbound Signal:
+   - Event: subscription.pending
+   - Raw Failure: BANK_DOWNTIME (HDFC recurring gateway degraded)
+   - History: 1 previous failure, high-value mandate
+
+2. Gemini 2.5 Flash Agent Diagnosis:
+   - Diagnosis: Temporary bank rail downtime; immediate retries will fail.
+   - Proposal: Suppress immediate retry, listen for downtime resolution, schedule retry for +6 hours.
+
+3. Deterministic Policy Engine Evaluation (Guardrails):
+   ✓ MAX_RETRIES: Legal (1 of 3)
+   ✓ MIN_RETRY_INTERVAL: 6h cooldown enforced
+   ✓ DOWNTIME_BLOCK: Modified execution time to post-outage window
+   ✓ HIGH_VALUE_APPROVAL: Flagged as high-value, scheduled with automated link fallback
+
+4. Executed Action:
+   - Retry successfully executed after bank downtime cleared
+   - Alternative UPI payment link dispatched upon window opening
+
+5. Outcome & Ledger:
+   ✓ payment.captured received
+   ✓ ₹12,000.00 RECOVERED (Net Cost: ₹2.00)
+   ✓ Cryptographic Audit Trail: EVENT → DIAGNOSIS → POLICY_VERDICT → EXECUTED → RECOVERED
+```
+
 ---
 
-## 2. Quickstart (Reproduce in 2 Commands)
+## 3. Quickstart (Reproduce in 2 Commands)
 
 ```bash
 # 1. Start Postgres + Kafka and run all tests (21/21 passing)

@@ -5,7 +5,7 @@
 ```mermaid
 flowchart TD
     subgraph Sources [Event Ingestion Sources]
-        A[Razorpay Live Test-Mode Webhooks] --> G[Webhook Gateway / Ingestion API]
+        A[Razorpay Live/Test-Mode Webhooks] --> G[Webhook Gateway / Ingestion API]
         B[Replay Event Stream] --> G
     end
 
