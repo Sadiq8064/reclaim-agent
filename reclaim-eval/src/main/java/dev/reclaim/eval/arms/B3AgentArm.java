@@ -11,7 +11,7 @@ public class B3AgentArm implements EvaluationArm {
     @Override
     public ArmResult evaluateCase(ScenarioModel scenario) {
         boolean recovered = false;
-        long costPaise = 1L; // ~₹0.01 Gemini LLM inference token cost
+        long costPaise = 6L; // ~₹0.06 Gemini 2.5 Flash token cost ($0.30/1M in, $2.50/1M out)
         int retries = 0;
         int contacts = 0;
         boolean churned = false;
