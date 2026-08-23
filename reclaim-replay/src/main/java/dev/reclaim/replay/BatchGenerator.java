@@ -14,7 +14,11 @@ public class BatchGenerator {
     private static final long SEED = 42L;
 
     public static List<ScenarioModel> generate300Batch() {
-        Random random = new Random(SEED);
+        return generate300Batch(SEED);
+    }
+
+    public static List<ScenarioModel> generate300Batch(long seed) {
+        Random random = new Random(seed);
         List<ScenarioModel> list = new ArrayList<>();
         Instant now = Instant.parse("2026-08-20T10:00:00Z");
 
