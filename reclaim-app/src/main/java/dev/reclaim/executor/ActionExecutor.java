@@ -89,11 +89,27 @@ public class ActionExecutor {
                     action.setResponse(objectMapper.writeValueAsString(response));
                     recoveryCase.addCost(action.getCostPaise());
                 }
-                case SEND_MESSAGE -> {
+                case SEND_MESSAGE, SEND_NOTIFICATION -> {
                     action.setStatus(ActionStatus.SUCCEEDED);
                     action.setExecutedAt(Instant.now());
-                    action.setResponse(objectMapper.writeValueAsString(Map.of("delivery", "SENT", "channel", "WHATSAPP")));
+                    String template = "Dear Customer, your subscription payment for " + recoveryCase.getSubscriptionId() + 
+                            " requires attention (" + recoveryCase.getFailureCode() + "). Please complete recovery securely.";
+                    action.setResponse(objectMapper.writeValueAsString(Map.of(
+                            "delivery", "DELIVERED",
+                            "channels", new String[]{"WHATSAPP", "EMAIL", "SMS"},
+                            "templateSnippet", template
+                    )));
                     recoveryCase.incrementContacts();
+                    recoveryCase.addCost(action.getCostPaise());
+                }
+                case CARD_UPDATER_SYNC -> {
+                    action.setStatus(ActionStatus.SUCCEEDED);
+                    action.setExecutedAt(Instant.now());
+                    action.setResponse(objectMapper.writeValueAsString(Map.of(
+                            "updaterStatus", "TOKEN_REFRESHED",
+                            "networkResponse", "EXPIRY_EXTENDED_SUCCESS",
+                            "vaultToken", "tok_vault_" + UUID.randomUUID().toString().substring(0, 8)
+                    )));
                     recoveryCase.addCost(action.getCostPaise());
                 }
                 case ESCALATE -> {

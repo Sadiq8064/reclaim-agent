@@ -1,0 +1,261 @@
+[ {
+  "armName" : "B0 — Do Nothing (Floor)",
+  "totalCases" : 300,
+  "recoveredCases" : 0,
+  "overallRecoveryRate" : 0.0,
+  "recoverableRecoveryRate" : 0.0,
+  "grossRecoveredRupees" : 0.0,
+  "totalCostRupees" : 0.0,
+  "netRecoveredRupees" : 0.0,
+  "actionsPerRecovery" : 0.0,
+  "wastedActions" : 0,
+  "churnTriggered" : 0,
+  "ci95LowerRupees" : 0.0,
+  "ci95UpperRupees" : 0.0,
+  "segmentStats" : {
+    "MANDATE_REVOKED" : {
+      "failureCode" : "MANDATE_REVOKED",
+      "total" : 27,
+      "recovered" : 0,
+      "recoveryRate" : 0.0,
+      "netRupees" : 0.0
+    },
+    "CARD_EXPIRED" : {
+      "failureCode" : "CARD_EXPIRED",
+      "total" : 48,
+      "recovered" : 0,
+      "recoveryRate" : 0.0,
+      "netRupees" : 0.0
+    },
+    "INSUFFICIENT_FUNDS" : {
+      "failureCode" : "INSUFFICIENT_FUNDS",
+      "total" : 102,
+      "recovered" : 0,
+      "recoveryRate" : 0.0,
+      "netRupees" : 0.0
+    },
+    "LIMIT_EXCEEDED" : {
+      "failureCode" : "LIMIT_EXCEEDED",
+      "total" : 24,
+      "recovered" : 0,
+      "recoveryRate" : 0.0,
+      "netRupees" : 0.0
+    },
+    "CUSTOMER_CHURNED" : {
+      "failureCode" : "CUSTOMER_CHURNED",
+      "total" : 24,
+      "recovered" : 0,
+      "recoveryRate" : 0.0,
+      "netRupees" : 0.0
+    },
+    "BANK_DOWNTIME" : {
+      "failureCode" : "BANK_DOWNTIME",
+      "total" : 42,
+      "recovered" : 0,
+      "recoveryRate" : 0.0,
+      "netRupees" : 0.0
+    },
+    "TECHNICAL_DECLINE" : {
+      "failureCode" : "TECHNICAL_DECLINE",
+      "total" : 33,
+      "recovered" : 0,
+      "recoveryRate" : 0.0,
+      "netRupees" : 0.0
+    }
+  }
+}, {
+  "armName" : "B1 — Fixed Retries (Blind 3x)",
+  "totalCases" : 300,
+  "recoveredCases" : 201,
+  "overallRecoveryRate" : 67.0,
+  "recoverableRecoveryRate" : 80.72289156626506,
+  "grossRecoveredRupees" : 509799.0,
+  "totalCostRupees" : 1668.0,
+  "netRecoveredRupees" : 508131.0,
+  "actionsPerRecovery" : 4.477611940298507,
+  "wastedActions" : 297,
+  "churnTriggered" : 99,
+  "ci95LowerRupees" : 419869.0,
+  "ci95UpperRupees" : 599542.0,
+  "segmentStats" : {
+    "MANDATE_REVOKED" : {
+      "failureCode" : "MANDATE_REVOKED",
+      "total" : 27,
+      "recovered" : 0,
+      "recoveryRate" : 0.0,
+      "netRupees" : -162.0
+    },
+    "CARD_EXPIRED" : {
+      "failureCode" : "CARD_EXPIRED",
+      "total" : 48,
+      "recovered" : 0,
+      "recoveryRate" : 0.0,
+      "netRupees" : -288.0
+    },
+    "INSUFFICIENT_FUNDS" : {
+      "failureCode" : "INSUFFICIENT_FUNDS",
+      "total" : 102,
+      "recovered" : 102,
+      "recoveryRate" : 100.0,
+      "netRupees" : 283586.0
+    },
+    "LIMIT_EXCEEDED" : {
+      "failureCode" : "LIMIT_EXCEEDED",
+      "total" : 24,
+      "recovered" : 24,
+      "recoveryRate" : 100.0,
+      "netRupees" : 63432.0
+    },
+    "CUSTOMER_CHURNED" : {
+      "failureCode" : "CUSTOMER_CHURNED",
+      "total" : 24,
+      "recovered" : 0,
+      "recoveryRate" : 0.0,
+      "netRupees" : -144.0
+    },
+    "BANK_DOWNTIME" : {
+      "failureCode" : "BANK_DOWNTIME",
+      "total" : 42,
+      "recovered" : 42,
+      "recoveryRate" : 100.0,
+      "netRupees" : 102506.0
+    },
+    "TECHNICAL_DECLINE" : {
+      "failureCode" : "TECHNICAL_DECLINE",
+      "total" : 33,
+      "recovered" : 33,
+      "recoveryRate" : 100.0,
+      "netRupees" : 59201.0
+    }
+  }
+}, {
+  "armName" : "B2 — Rules Heuristics (Deterministic No-LLM)",
+  "totalCases" : 300,
+  "recoveredCases" : 239,
+  "overallRecoveryRate" : 79.66666666666667,
+  "recoverableRecoveryRate" : 95.9839357429719,
+  "grossRecoveredRupees" : 648561.0,
+  "totalCostRupees" : 462.9,
+  "netRecoveredRupees" : 648098.1,
+  "actionsPerRecovery" : 1.5690376569037656,
+  "wastedActions" : 0,
+  "churnTriggered" : 24,
+  "ci95LowerRupees" : 550513.3500000018,
+  "ci95UpperRupees" : 756104.6000000023,
+  "segmentStats" : {
+    "MANDATE_REVOKED" : {
+      "failureCode" : "MANDATE_REVOKED",
+      "total" : 27,
+      "recovered" : 0,
+      "recoveryRate" : 0.0,
+      "netRupees" : 0.0
+    },
+    "CARD_EXPIRED" : {
+      "failureCode" : "CARD_EXPIRED",
+      "total" : 48,
+      "recovered" : 48,
+      "recoveryRate" : 100.0,
+      "netRupees" : 158235.2
+    },
+    "INSUFFICIENT_FUNDS" : {
+      "failureCode" : "INSUFFICIENT_FUNDS",
+      "total" : 102,
+      "recovered" : 102,
+      "recoveryRate" : 100.0,
+      "netRupees" : 283958.3
+    },
+    "LIMIT_EXCEEDED" : {
+      "failureCode" : "LIMIT_EXCEEDED",
+      "total" : 24,
+      "recovered" : 24,
+      "recoveryRate" : 100.0,
+      "netRupees" : 63528.0
+    },
+    "CUSTOMER_CHURNED" : {
+      "failureCode" : "CUSTOMER_CHURNED",
+      "total" : 24,
+      "recovered" : 0,
+      "recoveryRate" : 0.0,
+      "netRupees" : -8.4
+    },
+    "BANK_DOWNTIME" : {
+      "failureCode" : "BANK_DOWNTIME",
+      "total" : 42,
+      "recovered" : 32,
+      "recoveryRate" : 76.19047619047619,
+      "netRupees" : 83184.0
+    },
+    "TECHNICAL_DECLINE" : {
+      "failureCode" : "TECHNICAL_DECLINE",
+      "total" : 33,
+      "recovered" : 33,
+      "recoveryRate" : 100.0,
+      "netRupees" : 59201.0
+    }
+  }
+}, {
+  "armName" : "B3 — RECLAIM Agent (LLM + Guardrails)",
+  "totalCases" : 300,
+  "recoveredCases" : 249,
+  "overallRecoveryRate" : 83.0,
+  "recoverableRecoveryRate" : 100.0,
+  "grossRecoveredRupees" : 668051.0,
+  "totalCostRupees" : 457.5,
+  "netRecoveredRupees" : 667593.5,
+  "actionsPerRecovery" : 1.4096385542168675,
+  "wastedActions" : 0,
+  "churnTriggered" : 0,
+  "ci95LowerRupees" : 572005.3500000003,
+  "ci95UpperRupees" : 778055.6000000004,
+  "segmentStats" : {
+    "MANDATE_REVOKED" : {
+      "failureCode" : "MANDATE_REVOKED",
+      "total" : 27,
+      "recovered" : 0,
+      "recoveryRate" : 0.0,
+      "netRupees" : -0.27
+    },
+    "CARD_EXPIRED" : {
+      "failureCode" : "CARD_EXPIRED",
+      "total" : 48,
+      "recovered" : 48,
+      "recoveryRate" : 100.0,
+      "netRupees" : 158234.72
+    },
+    "INSUFFICIENT_FUNDS" : {
+      "failureCode" : "INSUFFICIENT_FUNDS",
+      "total" : 102,
+      "recovered" : 102,
+      "recoveryRate" : 100.0,
+      "netRupees" : 283957.28
+    },
+    "LIMIT_EXCEEDED" : {
+      "failureCode" : "LIMIT_EXCEEDED",
+      "total" : 24,
+      "recovered" : 24,
+      "recoveryRate" : 100.0,
+      "netRupees" : 63527.76
+    },
+    "CUSTOMER_CHURNED" : {
+      "failureCode" : "CUSTOMER_CHURNED",
+      "total" : 24,
+      "recovered" : 0,
+      "recoveryRate" : 0.0,
+      "netRupees" : -0.24
+    },
+    "BANK_DOWNTIME" : {
+      "failureCode" : "BANK_DOWNTIME",
+      "total" : 42,
+      "recovered" : 42,
+      "recoveryRate" : 100.0,
+      "netRupees" : 102673.58
+    },
+    "TECHNICAL_DECLINE" : {
+      "failureCode" : "TECHNICAL_DECLINE",
+      "total" : 33,
+      "recovered" : 33,
+      "recoveryRate" : 100.0,
+      "netRupees" : 59200.67
+    }
+  }
+} ]

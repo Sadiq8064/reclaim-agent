@@ -16,7 +16,16 @@
 | Recovery Rate (Recoverable) | 0.0% | 80.7% | 96.0% | **100.0%** |
 | Actions per Recovery | 0.0 | 4.48 | 1.57 | **1.41** |
 | Wasted Retries | 0 | 297 | **0** | **0** |
-| Churn Triggered | 0 | 99 | **24** | **0** |
+| Churn Triggered | 0 | 99 | 24 | **0** |
+
+### Net Revenue Recovery Comparison Chart
+
+```text
+B0 (Do Nothing)   | ₹0.00
+B1 (Fixed Retry)  | █████████████████████████░░░░░░░░  ₹508,131.00 (67.0%)
+B2 (Rules Only)   | ████████████████████████████████░  ₹648,098.10 (79.7%)
+B3 (RECLAIM Agent)| █████████████████████████████████  ₹667,593.50 (83.0% 🏆 +₹19.5k Net)
+```
 
 ## 2. Segment-by-Segment Recovery Rate Breakdown
 
