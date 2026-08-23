@@ -3,9 +3,14 @@
 > **An event-driven AI recovery control plane for failed recurring payments.**
 
 [![Build & Test Status](https://img.shields.io/badge/tests-27%20passed%20(100%25)-success?style=flat-square)](https://github.com/Sadiq8064/reclaim-agent)
-[![Java Version](https://img.shields.io/badge/java-17%20%2F%2021-blue?style=flat-square)](https://github.com/Sadiq8064/reclaim-agent)
+[![Java Version](https://img.shields.io/badge/java-17-blue?style=flat-square)](https://github.com/Sadiq8064/reclaim-agent)
 [![Framework](https://img.shields.io/badge/framework-Spring%20Boot%203.3-brightgreen?style=flat-square)](https://github.com/Sadiq8064/reclaim-agent)
 [![Target](https://img.shields.io/badge/target-Razorpay%20Buildathon%20Track%2003-blueviolet?style=flat-square)](https://github.com/Sadiq8064/reclaim-agent)
+
+---
+
+### 📊 Key Evaluation Headline
+> **20 Seeds &middot; 6,000 Modeled Failures &middot; +₹19,669.73 Mean Net Lift vs Deterministic Baseline &middot; 27/27 Tests Passing (100%)**
 
 ---
 
@@ -48,7 +53,7 @@ Detect ──► Correlate ──► Verify Truth ──► Diagnose ──► G
 ![System Architecture](docs/images/v1-system-architecture.png)
 
 - **Ingress (`WebhookGateway.java`):** Ingests Razorpay webhooks, verifies HMAC signatures, and deduplicates on `razorpay_event_id`.
-- **Event Streaming (Redpanda / Kafka):** Decouples burst webhook ingestion from downstream AI diagnostic latency via an append-only distributed log.
+- **Event Streaming (Redpanda / Kafka):** Decouples low-latency webhook ingestion from downstream AI diagnostic reasoning latency via an append-only distributed log.
 - **State Machine (`StateMachine.java`):** Tracks case lifecycles across 8 discrete states (`AT_RISK` $\rightarrow$ `DIAGNOSING` $\rightarrow$ `PLANNED` $\rightarrow$ `EXECUTING` $\rightarrow$ `WAITING` $\rightarrow$ `RECOVERED` / `ABANDONED` / `ESCALATED`).
 - **Truth Reconciler (`TruthReconciler.java`):** Queries live Razorpay API (`GET /v1/subscriptions/{id}`) to verify current truth before executing any action.
 - **Policy Engine (`PolicyEngine.java`):** 13 deterministic code guardrails governing retry intervals, spend limits, TRAI quiet hours, and cancellation locks.
@@ -65,7 +70,7 @@ Detect ──► Correlate ──► Verify Truth ──► Diagnose ──► G
 In RECLAIM, non-deterministic AI models have **zero direct execution authority**:
 
 | What the AI CAN Do | What the AI CANNOT Do |
-|---|---|
+|:---|:---|
 | Interpret complex decline error strings and bank codes | Directly charge cards or trigger money movements |
 | Synthesize customer attempt history and salary cycles | Override retry limits or spend caps |
 | Recommend optimal multi-step recovery plans | Bypass TRAI quiet hours (21:00–09:00 IST) |
@@ -97,8 +102,6 @@ In RECLAIM, non-deterministic AI models have **zero direct execution authority**
 ---
 
 ## 🛡️ Built for Payment-Event Reliability
-
-![Duplicate vs Out-of-Order Events](docs/images/v7-duplicate-vs-out-of-order.png)
 
 Distributed payment systems experience delivery quirks. RECLAIM explicitly separates and defends against two distinct reliability challenges:
 
@@ -138,20 +141,19 @@ We benchmarked RECLAIM across **20 random seeds × 300 cases (6,000 total simula
 ### Benchmark Comparison Table
 
 | Metric | B0 (Do Nothing) | B1 (Fixed Retries) | B2 (Deterministic Rules) | B3 (RECLAIM Agent) |
-|---|---|---|---|---|
+|:---|:---:|:---:|:---:|:---:|
 | **20-Seed Mean Net Recovered** | ₹0.00 | ₹496,210.45 | ₹634,119.26 | **₹653,788.99** |
 | **Standard Deviation (σ)** | — | ±₹14,210.00 | ±₹11,450.30 | **±₹12,180.50** |
 | **Mean Incremental Lift over B2** | — | — | Baseline | **+₹19,669.73 Net Lift** |
-| **Incremental Lift Range [Min, Max]**| — | — | — | **[+₹15,810.26, +₹23,933.73]** |
+| **Incremental Lift Range [Min, Max]** | — | — | — | **[+₹15,810.26, +₹23,933.73]** |
 | **B3 Win / Loss / Tie Count** | — | 20 / 0 / 0 | Baseline | **20 Wins / 0 Losses / 0 Ties\*** |
 | **Mean Actions per Case** | 0.0 | 4.48 | 1.57 | **1.41** |
-| **Wasted Retries per 300** | 0 | 297 | 0 | **0** |
+| **Mean Wasted Retries per 300** | 0 | 297 | 0 | **0** |
 | **Customer Churn Events Triggered** | 0 | 99 | 24 | **0** |
 
 *\*Statistical Context: The 20/20 win-rate tests stability against sampling variation from our synthetic generator under identical modeled conditions. It demonstrates that the agent consistently outperforms rigid 24h clocks when multi-signal delays (bank downtime, salary cycles) exist in the data model. It does not claim universal superiority across all real-world merchant portfolios.*
 
 ![20-Seed Comparison](docs/images/v3-b2-vs-b3-20seeds.png)
-![Incremental Lift Distribution](docs/images/v4-incremental-lift-distribution.png)
 
 ---
 
@@ -203,8 +205,6 @@ The test suite validates invariants across all 4 Maven modules:
 
 ## ⛓️ Audit Trail & Trust Boundary
 
-![Audit Ledger Boundary](docs/images/v8-audit-trust-boundary.png)
-
 - **Cryptographic Hash Chain:** Every state transition computes $\text{Hash}_N = \text{SHA-256}(\text{Hash}_{N-1} \parallel \text{Canonical\_JSON}(\text{entry}_N))$.
 - **Tamper Evidence:** Any direct SQL modification breaks the hash chain, detected immediately via `GET /api/audit/verify`.
 - **Honest Boundary Limitation:** The ledger is tamper-evident **within the RECLAIM application/database boundary**. External anchoring (e.g. to a public blockchain or WORM storage) is not implemented.
@@ -214,7 +214,7 @@ The test suite validates invariants across all 4 Maven modules:
 ## 🏗️ What is Real vs Modeled?
 
 | Component | Status | Description |
-|---|---|---|
+|:---|:---|:---|
 | **Spring Boot Backend** | Real Implementation | Java 17 + Spring Boot 3.3.x core service running on port 8080. |
 | **PostgreSQL Database** | Real Implementation | PostgreSQL 16 container with ACID transactions and JSONB storage. |
 | **Redpanda Event Broker** | Real Implementation | Kafka-compatible distributed event stream on `reclaim.events.raw`. |
@@ -231,11 +231,11 @@ The test suite validates invariants across all 4 Maven modules:
 ## 📦 Technology Choices
 
 | Technology | Role in RECLAIM | Architectural Rationale |
-|---|---|---|
-| **Java 17 / 21 & Spring Boot 3** | Core Control Plane | Strong type safety, transactional integrity (`@Transactional`), and enterprise concurrency. |
+|:---|:---|:---|
+| **Java 17 & Spring Boot 3.3** | Core Control Plane | Strong type safety, transactional integrity (`@Transactional`), and enterprise concurrency. |
 | **PostgreSQL 16** | Relational & JSONB Store | ACID state management for cases with JSONB flexibility for webhook payloads. |
-| **Redpanda / Kafka** | Distributed Event Streaming | Decouples webhook ingestion (10ms) from AI reasoning latency and buffers burst traffic. |
-| **Google Gemini 2.5 Flash** | AI Diagnostic Advisory | Fast latency (~800ms) and structured JSON schema outputs at low inference cost. |
+| **Redpanda / Kafka** | Distributed Event Streaming | Decouples low-latency webhook ingestion from AI reasoning calls and buffers burst traffic. |
+| **Google Gemini 2.5 Flash** | AI Diagnostic Advisory | Fast inference and native structured JSON schema outputs at low cost. |
 | **Resilience4j** | Circuit Breaker & Fallback | Trips on AI outage/latency to fall back to heuristic rules (`degraded_mode=true`). |
 | **SHA-256 Cryptography** | Audit Ledger Integrity | Cryptographic hash chaining for process-boundary tamper evidence. |
 
@@ -245,7 +245,7 @@ The test suite validates invariants across all 4 Maven modules:
 
 ### Prerequisites
 - Docker & Docker Compose
-- Java 17+ & Maven 3.9+
+- Java 17 & Maven 3.9+
 
 ```bash
 # 1. Start PostgreSQL & Redpanda Kafka broker
