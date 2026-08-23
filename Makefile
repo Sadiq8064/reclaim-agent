@@ -1,4 +1,4 @@
-.PHONY: up down build test run demo eval video-demo verify-audit clean
+.PHONY: up down build test run demo eval video-demo verify-audit tunnel clean
 
 SHELL := /bin/bash
 
@@ -42,6 +42,10 @@ video-demo:
 
 verify-audit:
 	@curl -s http://localhost:8080/api/audit/verify | jq .
+
+tunnel:
+	@echo "Starting Cloudflare quick tunnel for Razorpay webhook ingress..."
+	@cloudflared tunnel --url http://localhost:8080
 
 clean:
 	mvn clean
