@@ -35,12 +35,14 @@ Evaluated across **20 random seeds × 300 cases (6,000 total simulated subscript
 |---|---|---|---|---|
 | **20-Seed Mean Net Recovered** | ₹0.00 | ₹496,210.45 | ₹634,119.26 | **₹653,788.99** |
 | **Mean Incremental Lift** | — | — | Baseline | **+₹19,669.73 Net Lift** |
-| **Win / Loss / Tie Count** | — | 20 / 0 / 0 | Baseline | **20 Wins / 0 Losses / 0 Ties** |
-| **Actions per Recovery** | 0.0 | 4.48 | 1.57 | **1.41** |
-| **Wasted Retries per 300** | 0 | 297 | 0 | **0** |
+| **B3 Win / Loss / Tie Count** | — | 20 / 0 / 0 | Baseline | **20 Wins / 0 Losses / 0 Ties\*** |
+| **Mean Actions per Case** | 0.0 | 4.48 | 1.57 | **1.41** |
+| **Mean Wasted Retries per 300** | 0 | 297 | 0 | **0** |
 | **Intentional Abstentions** | — | 0 | 27 | **51 Cases (27 Revoked + 24 Churned)** |
 
-![AI Cost vs Incremental Lift](docs/images/v9-ai-cost-vs-incremental-lift.png)
+*\*The 20/20 win-rate tests stability against sampling variation from our synthetic generator under identical modeled conditions. It demonstrates that the agent consistently outperforms rigid 24h clocks when multi-signal delays exist.*
+
+![20-Seed Comparison](docs/images/v3-b2-vs-b3-20seeds.png)
 
 *For complete benchmarks, seed breakdowns, and statistical methodology, see [EVALUATION.md](EVALUATION.md).*  
 *For deep component specifications, sequence flows, and reliability invariants, see [ARCHITECTURE.md](ARCHITECTURE.md).*
@@ -73,5 +75,5 @@ Access the local Command Center dashboard at `http://localhost:8080`.
 
 ## 5. Scope & Limitations
 
-1. **Synthetic Generator Boundary:** Evaluation was conducted across 20 synthetic random seed batches calibrated to Indian payment decline distributions. Real-world recovery rates will vary by merchant vertical.
+1. **Synthetic Generator Boundary:** Evaluation was conducted across 20 synthetic random seed batches modeled on common recurring failure types. Real-world recovery rates will vary by merchant vertical.
 2. **Audit Ledger Boundary:** The SHA-256 hash chain provides tamper-evidence within the RECLAIM process and database boundary. External blockchain or WORM storage anchoring is not implemented.
