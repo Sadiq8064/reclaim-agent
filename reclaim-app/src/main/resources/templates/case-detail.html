@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Case Detail — RECLAIM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Outfit', sans-serif; } </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+    <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <a href="/" class="text-xs text-cyan-400 hover:text-cyan-300">&larr; Back to Dashboard</a>
+                <span class="text-slate-600">|</span>
+                <span class="text-sm font-semibold text-slate-200" th:text="'Case ' + ${case.id}"></span>
+            </div>
+            <div>
+                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" th:text="${case.state}"></span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-6 py-8 space-y-8">
+        <!-- Case Summary -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6">
+            <h2 class="text-lg font-bold text-slate-100 mb-4">Case Overview</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                    <div class="text-xs text-slate-400">Subscription ID</div>
+                    <div class="font-mono text-indigo-300 font-medium" th:text="${case.subscriptionId}"></div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400">Amount At Risk</div>
+                    <div class="font-semibold text-slate-100" th:text="'₹' + ${case.amountPaise / 100}"></div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400">Failure Code</div>
+                    <div class="font-medium text-rose-300" th:text="${case.failureCode}"></div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400">Net Recovered</div>
+                    <div class="font-semibold text-emerald-400" th:text="'₹' + ${(case.recoveredPaise - case.costIncurredPaise) / 100.0}"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LLM Decisions -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
+            <h3 class="text-md font-bold text-cyan-300 flex items-center">
+                <span class="mr-2">🧠</span> LLM Agent Diagnoses &amp; Proposed Plans
+            </h3>
+            <div th:each="d : ${decisions}" class="border border-slate-800 rounded-xl p-4 bg-slate-950/50 space-y-2 text-sm">
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                    <div>Model: <span class="text-slate-200" th:text="${d.model}"></span> · Confidence: <span class="text-emerald-400" th:text="${d.confidence}"></span></div>
+                    <div th:text="${d.createdAt}"></div>
+                </div>
+                <div class="text-slate-200 font-medium">Diagnosis: <span class="text-slate-300" th:text="${d.diagnosis}"></span></div>
+                <div class="text-xs text-slate-400">Reasoning: <span class="text-slate-300" th:text="${d.reasoning}"></span></div>
+                <div class="text-xs font-mono text-cyan-400/90 bg-slate-900 p-2.5 rounded overflow-x-auto" th:text="${d.proposedPlan}"></div>
+            </div>
+        </div>
+
+        <!-- Policy Verdicts -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
+            <h3 class="text-md font-bold text-amber-300 flex items-center">
+                <span class="mr-2">🛡️</span> Deterministic Policy Verdicts (Guardrails)
+            </h3>
+            <div th:each="v : ${verdicts}" class="border border-slate-800 rounded-xl p-4 bg-slate-950/50 space-y-2 text-sm">
+                <div class="flex items-center justify-between">
+                    <span th:if="${v.verdict.name() == 'ALLOW'}" class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">ALLOW</span>
+                    <span th:if="${v.verdict.name() == 'MODIFY'}" class="px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">MODIFY</span>
+                    <span th:if="${v.verdict.name() == 'DENY'}" class="px-2 py-0.5 rounded text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">DENY</span>
+                    <span class="text-xs text-slate-500" th:text="${v.createdAt}"></span>
+                </div>
+                <div th:if="${v.violatedRule != null}" class="text-xs text-rose-300">Rule Triggered: <span class="font-bold" th:text="${v.violatedRule}"></span></div>
+                <div class="text-xs text-slate-400 font-mono" th:text="${v.finalAction}"></div>
+            </div>
+        </div>
+
+        <!-- Hash-Chained Audit Ledger -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
+            <h3 class="text-md font-bold text-emerald-400 flex items-center">
+                <span class="mr-2">📜</span> Cryptographic Hash-Chained Audit Trail
+            </h3>
+            <div class="space-y-3 font-mono text-xs">
+                <div th:each="e : ${auditEntries}" class="border border-slate-800 rounded-lg p-3 bg-slate-950/70 space-y-1">
+                    <div class="flex items-center justify-between text-slate-400">
+                        <span class="text-cyan-400 font-bold" th:text="'#' + ${e.seq} + ' [' + ${e.entryType} + ']'"></span>
+                        <span class="text-slate-500" th:text="${e.actor}"></span>
+                    </div>
+                    <div class="text-slate-300 break-all" th:text="${e.payload}"></div>
+                    <div class="text-slate-500 text-[10px] pt-1">
+                        prev_hash: <span class="text-slate-400" th:text="${e.prevHash}"></span><br/>
+                        entry_hash: <span class="text-emerald-500" th:text="${e.entryHash}"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

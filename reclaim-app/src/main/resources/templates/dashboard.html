@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RECLAIM — Autonomous Revenue Recovery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+    <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 flex items-center justify-center font-bold text-white shadow-lg shadow-emerald-500/20">
+                    R
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 via-cyan-300 to-indigo-400 bg-clip-text text-transparent">
+                        RECLAIM
+                    </h1>
+                    <p class="text-xs text-slate-400">Autonomous Revenue Recovery Agent · Razorpay Track 03</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div th:if="${isHalted}" class="px-3 py-1 bg-rose-500/20 border border-rose-500 text-rose-300 rounded-full text-xs font-semibold flex items-center space-x-1">
+                    <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                    <span>KILL SWITCH ACTIVE (HALTED)</span>
+                </div>
+                <div th:unless="${isHalted}" class="px-3 py-1 bg-emerald-500/20 border border-emerald-500 text-emerald-300 rounded-full text-xs font-semibold flex items-center space-x-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>AGENT ACTIVE</span>
+                </div>
+                <button th:if="${!isHalted}" onclick="fetch('/api/admin/halt', {method: 'POST'}).then(() => window.location.reload())" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-medium transition shadow">
+                    🛑 Emergency Halt
+                </button>
+                <button th:if="${isHalted}" onclick="fetch('/api/admin/resume', {method: 'POST'}).then(() => window.location.reload())" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition shadow">
+                    ▶️ Resume Operations
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        <!-- KPI Row -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur-sm shadow-xl">
+                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Net Recovered (Headline)</div>
+                <div class="text-3xl font-bold text-emerald-400 mt-2" th:text="'₹' + ${#numbers.formatDecimal(netRecoveredRupees, 1, 2)}">₹0.00</div>
+                <div class="text-xs text-slate-500 mt-1">Gross: <span class="text-slate-300" th:text="'₹' + ${#numbers.formatDecimal(totalRecoveredRupees, 1, 2)}"></span> · Cost: <span class="text-rose-400" th:text="'₹' + ${#numbers.formatDecimal(totalCostRupees, 1, 2)}"></span></div>
+            </div>
+
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur-sm shadow-xl">
+                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Recovery Success Rate</div>
+                <div class="text-3xl font-bold text-cyan-400 mt-2" th:text="${#numbers.formatDecimal(recoveryRate, 1, 1)} + '%'">0.0%</div>
+                <div class="text-xs text-slate-500 mt-1"><span th:text="${totalCases}">0</span> Total Cases Processed</div>
+            </div>
+
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur-sm shadow-xl">
+                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Value At Risk</div>
+                <div class="text-3xl font-bold text-indigo-300 mt-2" th:text="'₹' + ${#numbers.formatDecimal(totalAtRiskRupees, 1, 2)}">₹0.00</div>
+                <div class="text-xs text-slate-500 mt-1"><span th:text="${activeCount}">0</span> Active / In Flight</div>
+            </div>
+
+            <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur-sm shadow-xl">
+                <div class="text-xs font-medium text-slate-400 uppercase tracking-wider">Audit Ledger Integrity</div>
+                <div class="flex items-center space-x-2 mt-2">
+                    <span th:if="${auditVerification.valid}" class="text-emerald-400 font-bold text-xl flex items-center">
+                        <svg class="w-6 h-6 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        100% Verified
+                    </span>
+                    <span th:unless="${auditVerification.valid}" class="text-rose-400 font-bold text-xl flex items-center">
+                        Tampered
+                    </span>
+                </div>
+                <div class="text-xs text-slate-400 mt-1" th:text="${auditVerification.totalEntries} + ' chained entries'"></div>
+            </div>
+        </div>
+
+        <!-- Cases Table -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100">Recovery Cases &amp; Autonomous Trajectories</h2>
+                    <p class="text-xs text-slate-400">All cases tracked end-to-end through the deterministic state machine and policy engine</p>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="text-xs uppercase bg-slate-950/60 text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="px-4 py-3">Case ID</th>
+                            <th class="px-4 py-3">Subscription</th>
+                            <th class="px-4 py-3">Amount</th>
+                            <th class="px-4 py-3">Failure Reason</th>
+                            <th class="px-4 py-3">State</th>
+                            <th class="px-4 py-3">Outcome</th>
+                            <th class="px-4 py-3">Attempts / Contacts</th>
+                            <th class="px-4 py-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60">
+                        <tr th:each="c : ${cases}" class="hover:bg-slate-800/30 transition">
+                            <td class="px-4 py-3 font-mono text-xs text-slate-400" th:text="${#strings.substring(c.id.toString(), 0, 8)} + '...'"></td>
+                            <td class="px-4 py-3 font-mono text-xs text-indigo-300" th:text="${c.subscriptionId}"></td>
+                            <td class="px-4 py-3 font-semibold text-slate-200" th:text="'₹' + ${c.amountPaise / 100}"></td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-0.5 rounded text-xs bg-slate-800 text-slate-300 border border-slate-700" th:text="${c.failureCode}"></span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span th:if="${c.state.name() == 'RECOVERED'}" class="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">RECOVERED</span>
+                                <span th:if="${c.state.name() == 'ABANDONED'}" class="px-2 py-0.5 rounded-full text-xs font-medium bg-slate-700/50 text-slate-400 border border-slate-600">ABANDONED</span>
+                                <span th:if="${c.state.name() == 'ESCALATED'}" class="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40">ESCALATED</span>
+                                <span th:if="${!c.state.isTerminal()}" class="px-2 py-0.5 rounded-full text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40" th:text="${c.state}"></span>
+                            </td>
+                            <td class="px-4 py-3 font-semibold">
+                                <span th:if="${c.outcome != null && c.outcome.name() == 'RECOVERED'}" class="text-emerald-400">💰 ₹<span th:text="${c.recoveredPaise / 100}"></span></span>
+                                <span th:if="${c.outcome != null && c.outcome.name() == 'ABANDONED'}" class="text-slate-500">🛑 Closed</span>
+                                <span th:if="${c.outcome != null && c.outcome.name() == 'ESCALATED'}" class="text-amber-400">🙋 Escalated</span>
+                                <span th:if="${c.outcome == null}" class="text-slate-400">—</span>
+                            </td>
+                            <td class="px-4 py-3 text-xs text-slate-400">
+                                <span class="text-slate-200" th:text="${c.attemptCount}">0</span> attempts · <span class="text-slate-200" th:text="${c.contactCount}">0</span> msgs
+                            </td>
+                            <td class="px-4 py-3">
+                                <a th:href="'/cases/' + ${c.id}" class="text-xs text-cyan-400 hover:text-cyan-300 font-medium underline">Inspect Trajectory &rarr;</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
